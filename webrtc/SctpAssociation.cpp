@@ -228,6 +228,13 @@ namespace RTC
         if (ret < 0)
             MS_THROW_ERROR("usrsctp_setsockopt(SCTP_INITMSG) failed: %s", std::strerror(errno));
 
+        //设置发送缓存区
+        //默认的buffer 大小为262144,将buffer size设置为512000*5
+        uint32_t bufferSize = 512000*5;
+        if (usrsctp_setsockopt(this->socket, SOL_SOCKET, SO_SNDBUF, &bufferSize, sizeof(uint32_t)) < 0) {
+            MS_THROW_ERROR("usrsctp_setsockopt(SO_SNDBUF) failed: %s", std::strerror(errno));
+        }
+
         // Server side.
         struct sockaddr_conn sconn; // NOLINT(cppcoreguidelines-pro-type-member-init)
 

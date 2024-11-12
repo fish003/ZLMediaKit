@@ -407,6 +407,10 @@ void WebRtcTransport::onRtcConfigure(RtcConfigure &configure) const {
     configure.enableTWCC(!remb_bit_rate);
 }
 
+bool WebRtcTransport::isOnlyDatachannel() {
+    return _answer_sdp->isOnlyDatachannel();
+}
+
 static void setSdpBitrate(RtcSession &sdp) {
     GET_CONFIG(size_t, max_bitrate, Rtc::kMaxBitrate);
     GET_CONFIG(size_t, min_bitrate, Rtc::kMinBitrate);
@@ -517,6 +521,15 @@ void WebRtcTransport::sendRtcpPacket(const char *buf, int len, bool flush, void 
             onSendSockData(std::move(pkt), flush);
         }
     }
+}
+
+void WebRtcTransport::SendSctpMessage(const uint8_t* data, size_t len) {
+#ifdef ENABLE_SCTP
+    RTC::SctpStreamParameters params;
+    //ppid 53为 webrtc binary
+    _sctp->SendSctpMessage(params, 53, data, len);
+#endif
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////////

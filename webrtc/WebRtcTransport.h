@@ -139,6 +139,9 @@ public:
     void sendRtpPacket(const char *buf, int len, bool flush, void *ctx = nullptr);
     void sendRtcpPacket(const char *buf, int len, bool flush, void *ctx = nullptr);
     void sendDatachannel(uint16_t streamId, uint32_t ppid, const char *msg, size_t len);
+    //发送sctp media data for h265
+    void SendSctpMessage(const uint8_t* data, size_t len);
+
 
     const EventPoller::Ptr& getPoller() const;
     Session::Ptr getSession() const;
@@ -190,6 +193,7 @@ protected:
     virtual void onBeforeEncryptRtp(const char *buf, int &len, void *ctx) = 0;
     virtual void onBeforeEncryptRtcp(const char *buf, int &len, void *ctx) = 0;
     virtual void onRtcpBye() = 0;
+    virtual bool isOnlyDatachannel();
 
 protected:
     void sendRtcpRemb(uint32_t ssrc, size_t bit_rate);

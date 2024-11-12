@@ -27,6 +27,7 @@ protected:
     void onStartWebRTC() override;
     void onDestory() override;
     void onRtcConfigure(RtcConfigure &configure) const override;
+    void OnSctpAssociationConnected(RTC::SctpAssociation *sctpAssociation) override;
 
 private:
     WebRtcPlayer(const EventPoller::Ptr &poller, const RtspMediaSource::Ptr &src, const MediaInfo &info);

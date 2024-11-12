@@ -128,6 +128,45 @@ void WebRtcPlayer::onRtcConfigure(RtcConfigure &configure) const {
     configure.setPlayRtspInfo(playSrc->getSdp());
 }
 
+void WebRtcPlayer::OnSctpAssociationConnected(RTC::SctpAssociation *sctpAssociation) {
+    auto playSrc = _play_src.lock();
+    if(!playSrc){
+        onShutdown(SockException(Err_shutdown, "rtsp media source was shutdown"));
+        return ;
+    }
+
+    InfoL<<"===> sctp association connected";
+
+    if (!canSendRtp() && isOnlyDatachannel()) {
+        playSrc->pause(false);
+        _reader = playSrc->getRing()->attach(getPoller(), true);
+        weak_ptr<WebRtcPlayer> weak_self = static_pointer_cast<WebRtcPlayer>(shared_from_this());
+        weak_ptr<Session> weak_session = static_pointer_cast<Session>(getSession());
+        _reader->setGetInfoCB([weak_session]() { return weak_session.lock(); });
+        _reader->setReadCB([weak_self](const RtspMediaSource::RingDataType &pkt) {
+            auto strong_self = weak_self.lock();
+            if (!strong_self) {
+                return;
+            }
+            size_t i = 0;
+            pkt->for_each([&](const RtpPacket::Ptr &rtp){
+                if (TrackVideo == rtp->type) {
+                    strong_self->SendSctpMessage((uint8_t*)rtp->data(),rtp->size());
+                }
+            });
+        });
+
+        _reader->setDetachCB([weak_self]() {
+            auto strong_self = weak_self.lock();
+            if (!strong_self) {
+                return;
+            }
+
+            strong_self->onShutdown(SockException(Err_shutdown, "rtsp ring buffer detached"));
+        });
+    }
+}
+
 void WebRtcPlayer::sendConfigFrames(uint32_t before_seq, uint32_t sample_rate, uint32_t timestamp, uint64_t ntp_timestamp) {
     auto play_src = _play_src.lock();
     if (!play_src) {
