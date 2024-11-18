@@ -37,7 +37,7 @@ WORKDIR /opt/ffmpeg
 RUN wget https://ffmpeg.org/releases/ffmpeg-4.4.tar.bz2 && \
     tar -xvjf ffmpeg-4.4.tar.bz2 && \
     cd ffmpeg-4.4 && \
-    ./configure --enable-shared --enable-gpl --enable-libx264 --enable-libvpx --enable-openssl --enable-pic && \
+    ./configure --enable-shared --enable-gpl --enable-libx264 --enable-libvpx --enable-openssl --enable-pic --enable-nonfree && \
     make -j$(nproc) && \
     make install
 
