@@ -38,10 +38,23 @@ WORKDIR /opt/media/ZLMediaKit
 
 # 3rdpart init
 WORKDIR /opt/media/ZLMediaKit/3rdpart
-RUN wget https://github.com/cisco/libsrtp/archive/v2.3.0.tar.gz -O libsrtp-2.3.0.tar.gz && \
-    tar xfv libsrtp-2.3.0.tar.gz && \
-    mv libsrtp-2.3.0 libsrtp && \
-    cd libsrtp && ./configure --enable-openssl && make -j $(nproc) && make install
+
+RUN wget https://github.com/cisco/libsrtp/archive/v2.5.0.tar.gz -O libsrtp-2.5.0.tar.gz && \
+    tar xfv libsrtp-2.5.0.tar.gz && \
+    mv libsrtp-2.5.0 libsrtp && \
+    cd libsrtp && ./configure --enable-openssl && make -j$(nproc) && make install
+
+# 安装usrsctp库的依赖
+RUN apt-get update && apt-get install -y autoconf automake libtool pkg-config git
+
+# 下载并安装usrsctp库
+RUN git clone https://github.com/sctplab/usrsctp.git && \
+    cd usrsctp && \
+    ./bootstrap && \
+    ./configure --prefix=/usr && \
+    make && \
+    make install
+
 #RUN git submodule update --init --recursive && \
 
 RUN mkdir -p build release/linux/${MODEL}/
