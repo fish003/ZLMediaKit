@@ -22,6 +22,7 @@ RUN apt-get update && \
          curl \
          vim \
          wget \
+	tar \
          ca-certificates \
          tzdata \
          libssl-dev \
@@ -32,15 +33,6 @@ RUN apt-get update && \
          apt-get clean -y && \
          rm -rf /var/lib/apt/lists/*
 
-# 安装和编译 FFmpeg
-WORKDIR /opt/ffmpeg
-RUN wget https://ffmpeg.org/releases/ffmpeg-4.4.tar.bz2 && \
-    tar -xvjf ffmpeg-4.4.tar.bz2 && \
-    cd ffmpeg-4.4 && \
-    ./configure --enable-shared --enable-gpl --enable-libx264 --enable-libvpx --enable-openssl --enable-pic --enable-nonfree && \
-    make -j$(nproc) && \
-    make install
-
 RUN mkdir -p /opt/media
 COPY . /opt/media/ZLMediaKit
 WORKDIR /opt/media/ZLMediaKit
@@ -48,21 +40,29 @@ WORKDIR /opt/media/ZLMediaKit
 # 3rdpart init
 WORKDIR /opt/media/ZLMediaKit/3rdpart
 
-RUN wget https://github.com/cisco/libsrtp/archive/v2.5.0.tar.gz -O libsrtp-2.5.0.tar.gz && \
-    tar xfv libsrtp-2.5.0.tar.gz && \
-    mv libsrtp-2.5.0 libsrtp && \
-    cd libsrtp && ./configure --enable-openssl && make -j$(nproc) && make install
+
+
+RUN wget https://github.com/cisco/libsrtp/archive/v2.3.0.tar.gz -O libsrtp-2.3.0.tar.gz && \
+    tar xfv libsrtp-2.3.0.tar.gz && \
+    mv libsrtp-2.3.0 libsrtp && \
+    cd libsrtp && ./configure --enable-openssl && make -j $(nproc) && make install
+
+
 
 # 安装usrsctp库的依赖
 RUN apt-get update && apt-get install -y autoconf automake libtool pkg-config git
-
-# 下载并安装usrsctp库
+# 安装 usrsctp
 RUN git clone https://github.com/sctplab/usrsctp.git && \
     cd usrsctp && \
     ./bootstrap && \
-    ./configure --prefix=/usr && \
-    make && \
-    make install
+    ./configure --prefix=/usr/local && \
+    make -j$(nproc) && \
+    make install && \
+    echo "/usr/local/lib" > /etc/ld.so.conf.d/usrsctp.conf && ldconfig
+
+
+
+
 
 #RUN git submodule update --init --recursive && \
 
@@ -99,7 +99,14 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime \
         && echo $TZ > /etc/timezone && \
         mkdir -p /opt/media/bin/www
 
+
+# 配置动态链接库路径
+ENV LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+
+
+
 WORKDIR /opt/media/bin/
+COPY --from=build /usr/local/lib/libusrsctp.so* /usr/local/lib/
 COPY --from=build /opt/media/ZLMediaKit/release/linux/${MODEL}/MediaServer /opt/media/ZLMediaKit/default.pem /opt/media/bin/
 COPY --from=build /opt/media/ZLMediaKit/release/linux/${MODEL}/config.ini /opt/media/conf/
 COPY --from=build /opt/media/ZLMediaKit/www/ /opt/media/bin/www/
